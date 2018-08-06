@@ -7,48 +7,92 @@ public class GenerateLevel : MonoBehaviour {
 
     public int columns;
     public int rows;
-    public float blockXScale;
-    public float blockYScale;
-    public float blockZScale;
+    public float doorHeight = 1.5f;
+    public float blockScale;
+    public float blockHeight;
     public GameObject wall;
     public GameObject door;
     public GameObject floor;
+    public GameObject guard;
+    public GameObject obstacle1x1;
+    public GameObject obstacle2x1;
+    public GameObject obstacle2x2;
+    public GameObject start;
+    public GameObject objective;
     enum Direction { none, up, down, left, right };
+    enum Obstacle { o1x1, o2x1, o2x2, start, objective };
     GameObject[,] map;
     List<Vector2Int> targets = new List<Vector2Int>();
+    List<Vector3> guardWaypoints = new List<Vector3>();
+    private GameObject startInstance;
+
+    //roomList is full of arrays of rooms in the format [x, y, w, h, i] where x, y are top-left and o is # of objectives
+    List<int[]> roomList = new List<int[]>();
+
+    private List<Vector3> gizmoPos = new List<Vector3>();
 
 	// Use this for initialization
 	void Start () {
         map = new GameObject[columns, rows];
         var surface = FillMap(columns, rows);
         PlaceRandomRoom(5, 20, 5, 20);
-        for (var i = 0; i < 15; i++)
+        for (var i = 0; i < 20; i++)
         {
-            PlaceHallway(4, 10, true);
+            if (Random.Range(0, 100) < 80)
+                PlaceHallway(4, 10, true);
             PlaceRoom(3, 8, 3, 8);
         }
         surface.BuildNavMesh();
+        PlaceObjective(Obstacle.start, 0);
+        PlaceObjective(Obstacle.objective, 1);
+        PlaceObjective(Obstacle.objective, 1);
+        PlaceObjective(Obstacle.objective, 1);
+        PlaceObstaclesInRooms(0.1f, 0.25f);
+        PlaceGuard(7, 10, 4, 10, 7, 30);
+        PlaceGuard(7, 10, 4, 10, 7, 30);
+        PlaceGuard(7, 10, 4, 10, 7, 30);
+        PlaceGuard(7, 10, 4, 10, 7, 30);
+        PlaceGuard(7, 10, 4, 10, 7, 30);
     }
 
     // Create a wall at a given position using the block scale vars, returns the created object
     GameObject CreateWall(float x, float y, float z)
     {
         Vector3 position = new Vector3(x, y, z);
-        return CreateObject(position, wall, "Wall");
+        GameObject created = GameObject.Instantiate(wall, position, Quaternion.identity);
+        created.transform.localScale = new Vector3(blockScale, blockHeight, blockScale);
+        created.name = "Wall";
+        return created;
     }
 
     // Creates a door
     GameObject CreateDoor(float x, float y, float z)
     {
         Vector3 position = new Vector3(x, y, z);
-        return CreateObject(position, door, "Door");
+        GameObject created = GameObject.Instantiate(door, position, Quaternion.identity);
+        created.transform.localScale = new Vector3(blockScale, blockScale*doorHeight, blockScale);
+        created.name = "Door";
+        CreateWall(x, y + (blockScale * doorHeight), z);
+        return created;
+    }
+
+    // Creates an obstacle
+    GameObject CreateObstacle(float x, float y, float z, float yRotate, GameObject obj)
+    {
+        Vector3 position = new Vector3(x, y, z);
+        Quaternion rotate = Quaternion.Euler(0, yRotate, 0);
+        GameObject created = GameObject.Instantiate(obj, position, Quaternion.identity);
+        created.transform.localScale *= blockScale;
+        created.name = "Obstacle";
+        created.transform.rotation = rotate;
+        return created;
     }
 
     // Creates an object and gives it a name using the block scale vars, returns the created object
     GameObject CreateObject(Vector3 position, GameObject obj, string name)
     {
         GameObject created = GameObject.Instantiate(obj, position, Quaternion.identity);
-        created.transform.localScale = new Vector3(blockXScale, blockYScale, blockZScale);
+        created.transform.localScale = new Vector3(blockScale, blockScale, blockScale);
         created.name = name;
         return created;
     }
@@ -60,12 +104,16 @@ public class GenerateLevel : MonoBehaviour {
         {
             for (var j = 0; j < rows; j++)
             {
-                map[i, j] = CreateWall(j * blockYScale, 0, i * blockXScale);
+                map[i, j] = CreateWall(j * blockScale, 0, i * blockScale);
             }
         }
-        var created = Instantiate(floor, new Vector3(0, 0, 0), Quaternion.identity);
-        created.transform.localScale = new Vector3(rows * blockYScale, 1, columns * blockXScale);
-        return created.GetComponentInChildren<NavMeshSurface>();
+        var createdCeiling = Instantiate(floor, new Vector3(0, blockHeight, 0), Quaternion.identity);
+        createdCeiling.transform.localScale = new Vector3(rows * blockScale, 1, columns * blockScale);
+
+        var createdFloor = Instantiate(floor, new Vector3(0, 0, 0), Quaternion.identity);
+        createdFloor.transform.localScale = new Vector3(rows * blockScale, 1, columns * blockScale);
+
+        return createdFloor.GetComponentInChildren<NavMeshSurface>();
     }
 
     // Randomly looks for an empty square
@@ -80,6 +128,305 @@ public class GenerateLevel : MonoBehaviour {
         }
     }
 
+    // Places the given objective in a room, ignoring all rooms with o value above maxObjectives
+    void PlaceObjective(Obstacle obs, int maxObjectives)
+    {
+        while (true)
+        {
+            var room = roomList[Random.Range(0, roomList.Count)];
+            if (room[4] > maxObjectives)
+                continue;
+            if (RandomlyPlaceObstacle(obs, room, 30))
+            {
+                if (obs == Obstacle.start)
+                    room[4] += 4;
+                else
+                    room[4] += 1;
+                return;
+            }
+        }
+    }
+
+    //Given the coordinates for a grid position and a distance, returns all empty squares that distance away
+    HashSet<Vector2Int> GetEmptySquaresAtDistance(int x, int y, int distance)
+    {
+        HashSet<Vector2Int> squaresSet = new HashSet<Vector2Int>();
+        int yamt;
+
+        for (int xdiff = -distance; xdiff <= distance; xdiff ++)
+        {
+            yamt = distance - Mathf.Abs(xdiff);
+            foreach (int ydiff in new List<int> { yamt, -yamt })
+            {
+                //Is the square in the map?
+                if (x + xdiff > 0 && x + xdiff < columns - 1 && y + ydiff > 0 && y + ydiff < columns - 1)
+                    //Is the square empty?
+                    if (map[x + xdiff, y + ydiff] == null)
+                        squaresSet.Add(new Vector2Int(x + xdiff, y + ydiff));
+            }
+
+        }
+
+        return squaresSet;
+    }
+
+    //Checks if a tile has an object with a given name adjacent to it - true means it does, false means it doesn't
+    bool HasAdjacentObject(int x, int y, string name, bool includeDiagonals)
+    {
+        if (GetGridName(x - 1, y) == name || GetGridName(x + 1, y) == name ||
+            GetGridName(x, y - 1) == name || GetGridName(x, y + 1) == name)
+            return true;
+        else
+        {
+            if (includeDiagonals && (GetGridName(x - 1, y - 1) == name || GetGridName(x + 1, y - 1) == name ||
+                GetGridName(x - 1, y + 1) == name || GetGridName(x + 1, y + 1) == name))
+                return true;
+            return false;
+        }
+    }
+
+    //Tests if a tile is empty, is not bordered by a door, and is not bordered by an obstacle
+    bool TilePlaceable(int x, int y)
+    {
+        if (HasAdjacentObject(x, y, "Door", false) || HasAdjacentObject(x, y, "Obstacle", true) || GetGridName(x, y) != null)
+            return false;
+        return true;
+    }
+
+    //Try placing a given obstacle at a given location, returns t/f
+    bool TryPlacingObstacle(Obstacle obs, int x, int y)
+    {
+       switch (obs)
+       {
+            case Obstacle.o1x1:
+                if (TilePlaceable(x, y))
+                {
+                    map[x,y] = CreateObstacle(y * blockScale, 0, x * blockScale, 0, obstacle1x1);
+                    return true;
+                }
+                break;
+
+            case Obstacle.objective:
+                if (TilePlaceable(x, y))
+                {
+                    map[x, y] = CreateObstacle(y * blockScale, 0, x * blockScale, 0, objective);
+                    return true;
+                }
+                break;
+
+            case Obstacle.o2x1:
+                if (TilePlaceable(x, y) && TilePlaceable(x + 1, y))
+                {
+                    var created = CreateObstacle(y * blockScale, 0, x * blockScale, 0, obstacle2x1);
+                    map[x, y] = created;
+                    map[x + 1, y] = created;
+                    return true;
+                }
+                else if (TilePlaceable(x - 1, y) && TilePlaceable(x - 1, y + 1))
+                {
+                    var created = CreateObstacle(y * blockScale, 0, x * blockScale, 90, obstacle2x1);
+                    map[x - 1, y] = created;
+                    map[x - 1, y + 1] = created;
+                    return true;
+                }
+                break;
+
+            case Obstacle.o2x2:
+                if (TilePlaceable(x, y) && TilePlaceable(x + 1, y) && TilePlaceable(x, y + 1) && TilePlaceable(x + 1, y + 1))
+                {
+                    var created = CreateObstacle(y * blockScale, 0, x * blockScale, 0, obstacle2x2);
+                    map[x, y] = created;
+                    map[x + 1, y] = created;
+                    map[x, y + 1] = created;
+                    map[x + 1, y + 1] = created;
+                    return true;
+                }
+                break;
+
+            case Obstacle.start:
+                if (TilePlaceable(x, y) && TilePlaceable(x + 1, y) && TilePlaceable(x, y + 1) && TilePlaceable(x + 1, y + 1))
+                {
+                    var created = CreateObstacle(y * blockScale, 0, x * blockScale, 0, start);
+                    startInstance = created;
+                    map[x, y] = created;
+                    map[x + 1, y] = created;
+                    map[x, y + 1] = created;
+                    map[x + 1, y + 1] = created;
+                    return true;
+                }
+                break;
+        }
+        return false;
+    }
+
+    //Finds a random empty space in a room without an adjacent door and places the given obstacle there
+    bool RandomlyPlaceObstacle(Obstacle obstacle, int[] room, int maxTries)
+    {
+        int currentTries = 0;
+        while (currentTries < maxTries)
+        {
+            int chosenx = room[0] + Random.Range(0, room[2]);
+            int choseny = room[1] + Random.Range(0, room[3]);
+
+            if (TryPlacingObstacle(obstacle, chosenx, choseny))
+                return true;
+
+            currentTries += 1;
+        }
+        return false;
+    }
+
+    //Given minDensity and maxDensity (obstacles to tiles ratio), fills up each room
+    void PlaceObstaclesInRooms(float minDensity, float maxDensity)
+    {
+        foreach (int[] room in roomList)
+        {
+            float density = Random.Range(minDensity, maxDensity);
+            int area = room[2] * room[3];
+            int already_covered = room[4];
+            int coveredTarget = Mathf.FloorToInt(area * density);
+            int currentCovered = already_covered;
+            List<Obstacle> potentialObstacles = new List<Obstacle> {Obstacle.o1x1, Obstacle.o2x1, Obstacle.o2x2};
+
+            while (currentCovered < coveredTarget)
+            {
+                int remainder = coveredTarget - currentCovered;
+                if (remainder <= 2)
+                    potentialObstacles.Remove(Obstacle.o2x1);
+                else if (remainder <= 4)
+                    potentialObstacles.Remove(Obstacle.o2x2);
+                Obstacle obs = potentialObstacles[Random.Range(0, potentialObstacles.Count)];
+                bool success = RandomlyPlaceObstacle(obs, room, 30);
+                if (success)
+                {
+                    if (obs == Obstacle.o1x1)
+                        currentCovered += 1;
+                    if (obs == Obstacle.o2x1)
+                        currentCovered += 2;
+                    if (obs == Obstacle.o2x2)
+                        currentCovered += 4;
+                }
+                else break;
+            }
+        }
+    }
+
+    //Tests that pos is at least minGuardSpacing away from all other waypoints
+    bool CheckGuardDistance(Vector3 pos, float minGuardSpacing)
+    {
+        foreach (Vector3 waypoint in guardWaypoints)
+        {
+            if (!CheckDistance(pos, waypoint, minGuardSpacing))
+                return false;
+        }
+        return true;
+    }
+
+    //Returns t/f based on whether or not pathfinding considers pos at least minGuardSpacing away from waypoint
+    bool CheckDistance(Vector3 pos, Vector3 waypoint, float minSpacing)
+    {
+        NavMeshPath testPath = new NavMeshPath();
+        NavMesh.CalculatePath(pos, waypoint, NavMesh.AllAreas, testPath);
+        if (GetPathLength(testPath) < minSpacing)
+            return false;
+
+        return true;
+    }
+
+    //
+
+    /*private void OnDrawGizmos()
+    {
+        foreach (Vector3 pos in gizmoPos)
+            Gizmos.DrawSphere(pos, 4);
+    }*/
+
+    //Given a guard object, a set from GetEmptySquaresAtDistance(), an idealDistance and an epsilon, returns the
+    //Vector3 position closest to idealDistance in the hashSet within epsilon or a (-1, -1, -1) Vector3 if impossible
+    Vector3 GetIdealPosition(GameObject guardObject, HashSet<Vector2Int> potentialSet, float idealDistance, float epsilon, float minGuardSpacing)
+    {
+        Vector3 destinationPos = new Vector3();
+        NavMeshAgent guardAgent = guardObject.GetComponent<NavMeshAgent>();
+        float bestDistance = Mathf.Infinity;
+
+        foreach (Vector2Int pos in potentialSet)
+        {
+            Vector3 testPos = new Vector3(pos[1] * blockScale + blockScale * .5f, guardObject.transform.position.y, pos[0] * blockScale + blockScale * .5f);
+
+            if (!CheckGuardDistance(testPos, minGuardSpacing) || !CheckDistance(testPos, startInstance.transform.position, minGuardSpacing * blockScale))
+                continue;
+
+            NavMeshPath testPath = new NavMeshPath();
+            NavMesh.CalculatePath(guardAgent.transform.position, testPos, NavMesh.AllAreas, testPath);
+            var currentDistance = GetPathLength(testPath);
+            
+            if (Mathf.Abs(idealDistance - currentDistance) < Mathf.Abs(idealDistance - bestDistance))
+            {
+                bestDistance = currentDistance;
+                destinationPos = testPos;
+            }
+        }
+
+        if (bestDistance > idealDistance - epsilon && bestDistance < idealDistance + epsilon)
+            return destinationPos;
+        else
+            return new Vector3(-1, -1, -1);
+    }
+
+    //Code I stole to get path length :D
+    public static float GetPathLength(NavMeshPath path)
+    {
+        float lng = 0.0f;
+
+        if ((path.status != NavMeshPathStatus.PathInvalid))
+        {
+            for (int i = 1; i < path.corners.Length; ++i)
+            {
+                lng += Vector3.Distance(path.corners[i - 1], path.corners[i]);
+            }
+        }
+
+        return lng;
+    }
+
+    //Creates a guard at a random empty square and gives it two patrol points, its spawn and another using the arguments
+    //Note that all params are given in terms of grid spaces, not actual Unity distances!
+    void PlaceGuard(float gridDistance, float idealDistance, float epsilon, float minGuardSpacing, float minStartSpacing, int maxTries)
+    {
+        int currentTries = 0;
+        //Place a guard
+        while (true && currentTries < maxTries)
+        {
+            currentTries++;
+            Vector2Int square = GetEmptySquare(columns, rows);
+            Vector3 position = new Vector3(square[1] * blockScale + blockScale * .5f, 1, square[0] * blockScale + blockScale * .5f);
+            if (!CheckGuardDistance(position, minGuardSpacing * blockScale) || !CheckDistance(position, startInstance.transform.position, minGuardSpacing * blockScale))
+                continue;
+
+            GameObject testGuard = Instantiate(guard, position, Quaternion.identity);
+
+            HashSet<Vector2Int> squaresToCheck = GetEmptySquaresAtDistance(square[0], square[1], Mathf.RoundToInt(gridDistance * blockScale));
+            Vector3 destinationPosition = GetIdealPosition(testGuard, squaresToCheck, idealDistance*blockScale, epsilon*blockScale, minGuardSpacing*blockScale);
+
+            if (destinationPosition == new Vector3(-1, -1, -1))
+            {
+                GameObject.Destroy(testGuard);
+                continue;
+            }
+
+            var empty = new GameObject();
+            var add1 = Instantiate(empty, position, Quaternion.identity).GetComponent<Transform>();
+            var add2 = Instantiate(empty, destinationPosition, Quaternion.identity).GetComponent<Transform>();
+            testGuard.GetComponent<GuardPatrol>().waypoints.Add(add1);
+            testGuard.GetComponent<GuardPatrol>().waypoints.Add(add2);
+            guardWaypoints.Add(add1.position);
+            guardWaypoints.Add(add2.position);
+            gizmoPos.Add(destinationPosition);
+            return;
+        }
+        print("Reached maximum tries! Guard not placed.");
+    }
+
     // Keeps trying to place a random room somewhere on the level
     void PlaceRandomRoom(int minWidth, int maxWidth, int minHeight, int maxHeight)
     {
@@ -91,6 +438,8 @@ public class GenerateLevel : MonoBehaviour {
             int x = Random.Range(1, columns - 1 - w);
             int y = Random.Range(1, rows - 1 - h);
             result = TryMakingRectangle(x, y, w, h);
+            if (result)
+                roomList.Add(new int[5] { x, y, w, h, 0 });
         }
     }
 
@@ -102,8 +451,8 @@ public class GenerateLevel : MonoBehaviour {
             Vector2Int coords = GetRandomInList(targets);
             var x = coords.x; var y = coords.y;
             Direction dir = GetBuildDirection(x, y);
-            var w = Random.Range(minWidth, maxWidth);
-            var h = Random.Range(minHeight, maxHeight);
+            int w = Random.Range(minWidth, maxWidth+1);
+            int h = Random.Range(minHeight, maxHeight+1);
             var limiter = MaxHallwayLength(x, y, dir);
             int xoff = Random.Range(0, w - 1);
             int yoff = Random.Range(0, h - 1);
@@ -112,42 +461,46 @@ public class GenerateLevel : MonoBehaviour {
             switch (dir)
             {
                 case Direction.up:
-                    if (h > limiter - 1)
-                        h = limiter - 1;
+                    if (h > limiter)
+                        h = limiter;
                     if (TryMakingRectangle(x - xoff, y - h, w, h))
                     {
                         ClearRectangle(x, y, 1, 1, false);
                         PlaceDoor(x, y);
+                        roomList.Add(new int[5] { x - xoff, y - h, w, h, 0 });
                         return;
                     }
                     break;
                 case Direction.right:
-                    if (w > limiter - 1)
-                        w = limiter - 1;
+                    if (w > limiter)
+                        w = limiter;
                     if (TryMakingRectangle(x + 1, y - yoff, w, h))
                     {
                         ClearRectangle(x, y, 1, 1, false);
                         PlaceDoor(x, y);
+                        roomList.Add(new int[5] { x + 1, y - yoff, w, h, 0 });
                         return;
                     }
                     break;
                 case Direction.down:
-                    if (h > limiter - 1)
-                        h = limiter - 1;
+                    if (h > limiter)
+                        h = limiter;
                     if (TryMakingRectangle(x - xoff, y + 1, w, h))
                     {
                         ClearRectangle(x, y, 1, 1, false);
                         PlaceDoor(x, y);
+                        roomList.Add(new int[5] { x - xoff, y + 1, w, h, 0 });
                         return;
                     }
                     break;
                 case Direction.left:
-                    if (w > limiter - 1)
-                        w = limiter - 1;
+                    if (w > limiter)
+                        w = limiter;
                     if (TryMakingRectangle(x - w, y - yoff, w, h))
                     {
                         ClearRectangle(x, y, 1, 1, false);
                         PlaceDoor(x, y);
+                        roomList.Add(new int[5] { x - w, y - yoff, w, h, 0 });
                         return;
                     }
                     break;
@@ -258,10 +611,10 @@ public class GenerateLevel : MonoBehaviour {
         return false;
     }
 
-    // Returns what's at a grid position without errors: null if nothing, the object's name if otherwise
+    // Returns what's at a grid position without errors: null if nothing or oob, the object's name if otherwise
     string GetGridName(int x, int y)
     {
-        if (map[x, y] == null)
+        if (x >= columns || y >= rows || x < 0 || y < 0 || map[x, y] == null)
             return null;
         else
             return map[x, y].name;
@@ -276,7 +629,7 @@ public class GenerateLevel : MonoBehaviour {
     // Check if a rectangle is within the bounds of the stage and doesn't include border blocks
     bool CheckInBounds(int x, int y, int w, int h)
     {
-        if (x <= 0 || x + w >= rows || y <= 0 || y + h >= columns)
+        if (x <= 0 || x + w >= columns || y <= 0 || y + h >= rows)
             return false;
         return true;
     }
@@ -340,7 +693,7 @@ public class GenerateLevel : MonoBehaviour {
     // Places a door and updates the map
     void PlaceDoor(int x, int y)
     {
-        map[x, y] = CreateDoor(y * blockYScale, 0, x * blockXScale);
+        map[x, y] = CreateDoor(y * blockScale, 0, x * blockScale);
     }
 
     // Given a grid position not on a border, returns which direction expansion should take place in or null

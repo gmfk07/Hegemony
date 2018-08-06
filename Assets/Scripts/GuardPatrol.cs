@@ -6,7 +6,7 @@ using UnityEngine.AI;
 
 public class GuardPatrol : MonoBehaviour {
 
-    public Transform[] waypoints;
+    public List<Transform> waypoints;
     public float epsilon;
     private NavMeshAgent agent;
     private Transform target;
@@ -33,7 +33,7 @@ public class GuardPatrol : MonoBehaviour {
 
     private void AssignWaypoint(int inp)
     {
-        if (inp < waypoints.Length)
+        if (inp < waypoints.Count)
             index = inp;
         else
             index = 0;

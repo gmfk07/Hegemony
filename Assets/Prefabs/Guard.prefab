@@ -98,7 +98,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   waypoints: []
-  epsilon: 0
+  epsilon: 0.2
 --- !u!136 &136723332445301752
 CapsuleCollider:
   m_ObjectHideFlags: 1
