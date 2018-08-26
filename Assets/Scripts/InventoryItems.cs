@@ -8,7 +8,11 @@ public interface IInventoryItem
 
     Sprite Image { get; }
 
+    GameObject Equipment { get;  }
+
     void OnPickup();
+    void OnSelected();
+    void OnDeselected();
 }
 
 public class InventoryEventArgs : System.EventArgs

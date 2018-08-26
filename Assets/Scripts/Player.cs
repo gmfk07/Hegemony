@@ -6,11 +6,12 @@ public class Player : MonoBehaviour {
 
     private Inventory inventory;
     private IInventoryItem itemToPickup;
+    private HUD hud;
 
     private void Start()
     {
         inventory = gameObject.GetComponent<Inventory>();
-        HUD hud = GameObject.Find("HUD").GetComponent<HUD>();
+        hud = GameObject.Find("HUD").GetComponent<HUD>();
         hud.inventory = inventory;
         hud.setUpInventoryEvents();
     }
@@ -20,7 +21,6 @@ public class Player : MonoBehaviour {
         if (itemToPickup != null && Input.GetKeyDown(KeyCode.E))
         {
             inventory.AddItem(itemToPickup);
-            itemToPickup.OnPickup();
         }
     }
 

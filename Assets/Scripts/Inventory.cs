@@ -6,7 +6,7 @@ public class Inventory : MonoBehaviour
 {
     public int slots = 6;
 
-    private List<IInventoryItem> pItems = new List<IInventoryItem>();
+    public List<IInventoryItem> pItems = new List<IInventoryItem>();
 
     public System.EventHandler<InventoryEventArgs> ItemAdded;
 

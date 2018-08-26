@@ -22,8 +22,30 @@ public class Pickup : MonoBehaviour, IInventoryItem {
         }
     }
 
+    public GameObject _Equipment = null;
+    public GameObject Equipment
+    {
+        get
+        {
+            return _Equipment;
+        }
+    }
+    private GameObject created;
+
     public void OnPickup()
     {
         gameObject.SetActive(false);
+    }
+
+    public void OnSelected()
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        Transform parent = player.transform.GetChild(0);
+        created = Instantiate(Equipment, parent);
+    }
+
+    public void OnDeselected()
+    {
+        Destroy(created);
     }
 }
