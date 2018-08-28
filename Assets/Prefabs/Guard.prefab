@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: 136723332445301752}
   - component: {fileID: 195345508798801662}
   - component: {fileID: 114127900263953512}
+  - component: {fileID: 114572458508913062}
   m_Layer: 0
   m_Name: Guard
   m_TagString: Untagged
@@ -99,6 +100,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   waypoints: []
   epsilon: 0.2
+--- !u!114 &114572458508913062
+MonoBehaviour:
+  m_ObjectHideFlags: 1
+  m_PrefabParentObject: {fileID: 0}
+  m_PrefabInternal: {fileID: 100100000}
+  m_GameObject: {fileID: 1641879701585300}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb702aa32906e484982ec21c1d0a7f8b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  health: 5
 --- !u!136 &136723332445301752
 CapsuleCollider:
   m_ObjectHideFlags: 1
