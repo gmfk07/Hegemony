@@ -8,7 +8,7 @@ public interface IInventoryItem
 
     Sprite Image { get; }
 
-    GameObject Equipment { get;  }
+    GameObject Equipment { get; }
 
     void OnPickup();
     void OnSelected();

@@ -167,4 +167,4 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   player: {fileID: 1733865995065592, guid: 95be6d750da53254dbb8f52e2ccc83f7, type: 2}
-  pistol: {fileID: 1415992454194490, guid: 787c93886bc025144ae68d3c81c18005, type: 2}
+  pistol: {fileID: 1013303411611960, guid: 2219b07a7857a6a428cd10e496fd9d62, type: 2}
