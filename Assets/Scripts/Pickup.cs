@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Pickup : MonoBehaviour, IInventoryItem {
 
@@ -46,6 +47,7 @@ public class Pickup : MonoBehaviour, IInventoryItem {
 
     public void OnDeselected()
     {
+        GameObject.Find("AmmoCounter").GetComponent<Text>().text = "";
         Destroy(created);
     }
 }
