@@ -623,14 +623,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   damage: 1
   range: 20
-  fireRate: 2
-  impactForce: 60
-  reloadHoldTime: 0.5
-  chargeCost: 1
-  maxAmmo: 4
   muzzleFlash: {fileID: 198212888972249174}
   impactEffect: {fileID: 100002, guid: 00fedc70b62a31e448e8ccc298257b56, type: 2}
-  reloadPressed: 0
 --- !u!198 &198107484517319684
 ParticleSystem:
   m_ObjectHideFlags: 1
