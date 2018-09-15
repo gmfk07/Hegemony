@@ -19,8 +19,9 @@ public class GenerateLevel : MonoBehaviour {
     public GameObject obstacle2x2;
     public GameObject start;
     public GameObject objective;
+    public GameObject terminal;
     enum Direction { none, up, down, left, right };
-    enum Obstacle { o1x1, o2x1, o2x2, start, objective };
+    enum Obstacle { o1x1, o2x1, o2x2, start, objective, terminal };
     GameObject[,] map;
     List<Vector2Int> targets = new List<Vector2Int>();
     List<Vector3> guardWaypoints = new List<Vector3>();
@@ -44,6 +45,10 @@ public class GenerateLevel : MonoBehaviour {
         }
         surface.BuildNavMesh();
         PlaceObjective(Obstacle.start, 0);
+        PlaceObjective(Obstacle.terminal, 0);
+        PlaceObjective(Obstacle.terminal, 0);
+        PlaceObjective(Obstacle.terminal, 0);
+        PlaceObjective(Obstacle.terminal, 0);
         PlaceObjective(Obstacle.objective, 1);
         PlaceObjective(Obstacle.objective, 1);
         PlaceObjective(Obstacle.objective, 1);
@@ -202,6 +207,65 @@ public class GenerateLevel : MonoBehaviour {
                 if (TilePlaceable(x, y))
                 {
                     map[x,y] = CreateObstacle(y * blockScale, 0, x * blockScale, 0, obstacle1x1);
+                    return true;
+                }
+                break;
+
+            case Obstacle.terminal:
+                if (TilePlaceable(x, y))
+                {
+                    //Pick a direction and rotate!
+                    Direction[] dirs = new Direction[4] { Direction.down, Direction.left, Direction.right, Direction.up };
+                    bool rotated = false;
+                    Quaternion rot;
+                    while (!rotated)
+                    {
+                        int index = Random.Range(0, 4);
+                        switch (dirs[index])
+                        {
+                            case Direction.down:
+                                if (map[x, y + 1] == null)
+                                {
+                                    //If facing down, the terminal will be one block to the left, so adjust
+                                    map[x, y] = CreateObstacle(y * blockScale, 0, (x + 1) * blockScale, 0, terminal);
+                                    rot = map[x, y].transform.rotation;
+                                    map[x,y].transform.rotation.Set(rot.x, 90, rot.z, rot.w);
+                                    rotated = true;
+                                }
+                                break;
+
+                            case Direction.up:
+                                if (map[x, y - 1] == null)
+                                {
+                                    //If facing up, the terminal will be one block up, so adjust
+                                    map[x, y] = CreateObstacle((y + 1) * blockScale, 0, x * blockScale, 0, terminal);
+                                    rot = map[x, y].transform.rotation;
+                                    rot.Set(rot.x, -90, rot.z, rot.w);
+                                    rotated = true;
+                                }
+                                break;
+
+                            case Direction.right:
+                                if (map[x + 1, y] == null)
+                                {
+                                    //If facing right... actually nothing happens
+                                    map[x, y] = CreateObstacle(y * blockScale, 0, x * blockScale, 0, terminal);
+                                    rotated = true;
+                                }
+                                break;
+
+                            case Direction.left:
+                                if (map[x - 1, y] == null)
+                                {
+                                    //If facing left, the terminal will be one block left and one block up, so adjust
+                                    map[x, y] = CreateObstacle((y + 1) * blockScale, 0, (x + 1) * blockScale, 0, terminal);
+                                    rot = map[x, y].transform.rotation;
+                                    rot.Set(rot.x, 180, rot.z, rot.w);
+                                    rotated = true;
+                                }
+                                break;
+                        }
+                    }
                     return true;
                 }
                 break;

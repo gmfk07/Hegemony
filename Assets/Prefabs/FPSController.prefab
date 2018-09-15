@@ -423,6 +423,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a64ad3b7b5ae73240a8e713df05b3ede, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentPistolAmmo: 0
+  terminalSiphonTime: 1
 --- !u!124 &124209849743185316
 Behaviour:
   m_ObjectHideFlags: 1
