@@ -227,9 +227,7 @@ public class GenerateLevel : MonoBehaviour {
                                 if (map[x, y + 1] == null)
                                 {
                                     //If facing down, the terminal will be one block to the left, so adjust
-                                    map[x, y] = CreateObstacle(y * blockScale, 0, (x + 1) * blockScale, 0, terminal);
-                                    rot = map[x, y].transform.rotation;
-                                    map[x,y].transform.rotation.Set(rot.x, 90, rot.z, rot.w);
+                                    map[x, y] = CreateObstacle(y * blockScale, 0, (x + 1) * blockScale, 90, terminal);
                                     rotated = true;
                                 }
                                 break;
@@ -238,9 +236,7 @@ public class GenerateLevel : MonoBehaviour {
                                 if (map[x, y - 1] == null)
                                 {
                                     //If facing up, the terminal will be one block up, so adjust
-                                    map[x, y] = CreateObstacle((y + 1) * blockScale, 0, x * blockScale, 0, terminal);
-                                    rot = map[x, y].transform.rotation;
-                                    rot.Set(rot.x, -90, rot.z, rot.w);
+                                    map[x, y] = CreateObstacle((y + 1) * blockScale, 0, x * blockScale, -90, terminal);
                                     rotated = true;
                                 }
                                 break;
@@ -258,9 +254,7 @@ public class GenerateLevel : MonoBehaviour {
                                 if (map[x - 1, y] == null)
                                 {
                                     //If facing left, the terminal will be one block left and one block up, so adjust
-                                    map[x, y] = CreateObstacle((y + 1) * blockScale, 0, (x + 1) * blockScale, 0, terminal);
-                                    rot = map[x, y].transform.rotation;
-                                    rot.Set(rot.x, 180, rot.z, rot.w);
+                                    map[x, y] = CreateObstacle((y + 1) * blockScale, 0, (x + 1) * blockScale, 180, terminal);
                                     rotated = true;
                                 }
                                 break;

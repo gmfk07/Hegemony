@@ -6,9 +6,13 @@ public class GuardVision : MonoBehaviour {
     
     public float fovAngle = 110f;
     public bool playerInSight;
-    public Vector3 lastSighting;
+    public Vector3 targetDestination;
     private GuardPatrol gp;
     private GuardInvestigate gi;
+    public bool heardNoise;
+    private State state = State.patrol;
+
+    public enum State { patrol, investigate, chase }
 
     private SphereCollider col;
 
@@ -37,15 +41,36 @@ public class GuardVision : MonoBehaviour {
                     if (hit.collider.gameObject.tag == "Player")
                     {
                         playerInSight = true;
-                        lastSighting = hit.collider.transform.position;
-                        gp.enabled = false;
-                        gi.enabled = true;
-                        gi.inspectLocation = lastSighting;
+                        targetDestination = hit.collider.transform.position;
+                        
+                        gi.inspectLocation = targetDestination;
+                        if (state == State.patrol)
+                            setState(State.investigate);
                     }
                 }
             }
-
         }
+    }
+
+    public void setState(State inputState)
+    {
+        state = inputState;
+        if (inputState == State.investigate)
+        {
+            gp.enabled = false;
+            gi.enabled = true;
+        }
+        if (inputState == State.patrol)
+        {
+            gp.enabled = true;
+            gi.enabled = false;
+            gp.AssignWaypoint(0);
+        }
+    }
+
+    public State getState()
+    {
+        return state;
     }
 
     private void OnTriggerExit(Collider other)

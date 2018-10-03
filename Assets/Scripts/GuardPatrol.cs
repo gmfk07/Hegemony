@@ -31,7 +31,7 @@ public class GuardPatrol : MonoBehaviour {
         return false;
     }
 
-    private void AssignWaypoint(int inp)
+    public void AssignWaypoint(int inp)
     {
         if (inp < waypoints.Count)
             index = inp;
