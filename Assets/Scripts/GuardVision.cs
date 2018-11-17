@@ -26,7 +26,7 @@ public class GuardVision : MonoBehaviour {
     //When the player is within sight range
     private void OnTriggerStay(Collider other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.tag == "Player" || other.gameObject.tag == "Interactor")
         {
             playerInSight = false;
             Vector3 direction = other.transform.position - transform.position;
@@ -38,7 +38,7 @@ public class GuardVision : MonoBehaviour {
                 Debug.DrawRay(transform.position, direction.normalized);
                 if (Physics.Raycast(transform.position, direction.normalized, out hit, col.radius))
                 {
-                    if (hit.collider.gameObject.tag == "Player")
+                    if (hit.collider.gameObject.tag == "Player" || hit.collider.gameObject.tag == "Interactor")
                     {
                         playerInSight = true;
                         targetDestination = hit.collider.transform.position;
@@ -75,7 +75,7 @@ public class GuardVision : MonoBehaviour {
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject.tag == "Player")
+        if (other.gameObject.tag == "Player" || other.gameObject.tag == "Interactor")
         {
             playerInSight = false;
         }

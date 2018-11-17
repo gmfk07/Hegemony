@@ -8,12 +8,13 @@ public class GuardInvestigate : MonoBehaviour {
     public Vector3 inspectLocation;
     private NavMeshAgent agent;
     public float epsilon;
-    private float lookAroundTime;
+    public float lookAroundTime;
+    public float speed = 4f;
     private float lastlookAround;
     public bool looking = false;
 
     // Use this for initialization
-    void Start () {
+    void OnEnable () {
         agent = GetComponent<NavMeshAgent>();
         agent.destination = inspectLocation;
     }
@@ -31,10 +32,16 @@ public class GuardInvestigate : MonoBehaviour {
     //Start looking around
     void FixedUpdate () {
         agent.destination = inspectLocation;
+        agent.speed = speed;
         if (AtTarget(epsilon) && !looking)
         {
             looking = true;
+            inspectLocation = transform.position;
             lastlookAround = Time.time;
+        }
+        if (looking)
+        {
+            transform.Rotate(new Vector3(0, 1.25f, 0));
         }
 	}
 

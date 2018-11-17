@@ -7,6 +7,7 @@ public class Player : MonoBehaviour {
 
     private Inventory inventory;
     private IInventoryItem itemToPickup;
+    public Door nearestDoor;
     private HUD hud;
     private MissionStats ms;
     private FirstPersonController fpc;
@@ -37,6 +38,7 @@ public class Player : MonoBehaviour {
         {
             TryPickup();
             TryTerminalSiphon();
+            TryToggleDoor();
         }
         if (Input.GetKeyUp(KeyCode.E))
         {
@@ -49,6 +51,12 @@ public class Player : MonoBehaviour {
         }
     }
 
+    private void TryPickup()
+    {
+        if (itemToPickup != null)
+            inventory.AddItem(itemToPickup);
+    }
+
     private void TryTerminalSiphon()
     {
         if (terminalInRange != null && !terminalInRange.used)
@@ -58,10 +66,15 @@ public class Player : MonoBehaviour {
         }
     }
 
-    private void TryPickup()
+    private void TryToggleDoor()
     {
-        if (itemToPickup != null)
-            inventory.AddItem(itemToPickup);
+        if (nearestDoor != null)
+        {
+            if (nearestDoor.open)
+                nearestDoor.CloseDoor();
+            else
+                nearestDoor.OpenDoor();
+        }
     }
 
     private void OnTriggerEnter(Collider other)
@@ -70,7 +83,9 @@ public class Player : MonoBehaviour {
         if (item != null)
         {
             itemToPickup = item;
-        } else if (other.gameObject.tag == "Terminal")
+        }
+
+        else if (other.gameObject.tag == "Terminal")
         {
             terminalInRange = other.gameObject.GetComponent<Terminal>();
         }
@@ -83,6 +98,7 @@ public class Player : MonoBehaviour {
         {
             itemToPickup = null;
         }
+
         else if (other.gameObject.tag == "Terminal")
         {
             terminalInRange = null;

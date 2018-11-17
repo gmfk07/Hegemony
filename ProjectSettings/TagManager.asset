@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Terminal
+  - Door
+  - Interactor
+  - GuardInteractor
   layers:
   - Default
   - TransparentFX

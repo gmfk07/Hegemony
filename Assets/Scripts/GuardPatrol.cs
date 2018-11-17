@@ -8,11 +8,12 @@ public class GuardPatrol : MonoBehaviour {
 
     public List<Transform> waypoints;
     public float epsilon;
+    public float speed = 3.5f;
     private NavMeshAgent agent;
     private Transform target;
     private int index;
 
-	void Start () {
+	void OnEnable () {
         agent = GetComponent<NavMeshAgent>();
         AssignWaypoint(0);
     }
@@ -33,6 +34,7 @@ public class GuardPatrol : MonoBehaviour {
 
     public void AssignWaypoint(int inp)
     {
+        agent.speed = speed;
         if (inp < waypoints.Count)
             index = inp;
         else

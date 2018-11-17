@@ -15,14 +15,31 @@ public class Door : MonoBehaviour {
     //Open the door
     public void OpenDoor()
     {
-        open = true;
-        anim.SetTrigger("DoorOpen");
+        if (!open && anim.GetCurrentAnimatorStateInfo(0).IsName("Door"))
+        {
+            open = true;
+            anim.Play("DoorOpen");
+        }
     }
 
     //Close the door
     public void CloseDoor()
     {
-        open = false;
-        anim.SetTrigger("DoorClose");
+        if (open && anim.GetCurrentAnimatorStateInfo(0).IsName("Door"))
+        {
+            open = false;
+            anim.Play("DoorClose");
+        }
+    }
+
+    public void CloseDoorWithDelay(float delayTime)
+    {
+        StartCoroutine(CloseDoorWithDelayEnum(delayTime));
+    }
+
+    private IEnumerator CloseDoorWithDelayEnum(float delayTime)
+    {
+        yield return new WaitForSeconds(delayTime);
+        CloseDoor();
     }
 }
