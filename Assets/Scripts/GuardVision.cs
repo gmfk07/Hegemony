@@ -64,7 +64,6 @@ public class GuardVision : MonoBehaviour {
         {
             gp.enabled = true;
             gi.enabled = false;
-            gp.AssignWaypoint(0);
         }
     }
 

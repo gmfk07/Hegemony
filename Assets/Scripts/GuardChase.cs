@@ -16,8 +16,5 @@ public class GuardChase : MonoBehaviour {
         agent.destination = chaseLocation;
     }
 	
-	// Update is called once per frame
-	void Update () {
-		
-	}
+	
 }
